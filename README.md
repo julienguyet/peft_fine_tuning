@@ -73,3 +73,12 @@ Summarize the following conversation:
 
 Summary:
 ```
+
+Then, we can call the model using the HuggingFace library:
+
+```python3
+input = tokenizer(prompt, return_tensors="pt")
+output = tokenizer.decode(original_model.generate(input["input_ids"],
+                                                max_new_tokens=200)[0],
+                                                skip_special_tokens=True)
+```
