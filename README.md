@@ -82,3 +82,86 @@ output = tokenizer.decode(original_model.generate(input["input_ids"],
                                                 max_new_tokens=200)[0],
                                                 skip_special_tokens=True)
 ```
+
+This code will feed the model with a prompt (the input variable) and we will decode model's predictions using the tokenizer.decode() function. Which gives us:
+
+```
+Input Prompt:
+
+
+Summarize the following conversation:
+#Person1#: What kind of job do you intend to do?
+#Person2#: I want to do some management job since I have three-year's work history.
+#Person1#: What are your plans if you were hired?
+#Person2#: I would apply my specialty and experience to my job and gradually move up to the management level in this company.
+
+Summary:
+
+----------------------------------------------------------------------------------------------------
+Baseline Human Summary:
+#Person2# tells #Person1# #Person2#'s ideal job and the job plan if hired.
+----------------------------------------------------------------------------------------------------
+LLM Summary - Zero Shot:
+Ask the person to describe their career goals.
+```
+
+As we can see, the model summary is quite different from the human baseline. Let's compute the ROUGE score to get an idea of how well the model is performing.
+
+```
+ORIGINAL MODEL:
+{'rouge1': 0.0970873786407767, 'rouge2': 0.0, 'rougeL': 0.0970873786407767, 'rougeLsum': 0.0970873786407767}
+```
+
+ROUGE scores are computed like below:
+
+$$ \text{ROUGE-1} = \frac{\text{Unigram Matches}}{\text{Total number of unigram in reference}} $$
+
+$$ \text{ROUGE-2} = \frac{\text{Unigram Matches}}{\text{Unigrams in Output}} $$
+
+$$ \text{ROUGE-L} = \frac{\text{Length of longest common subsequence}}{\text{Total number of words in reference summaries}} $$
+
+$$ \text{ROUGE-Lsum} = \frac{\text{Total length of overlapping summary}}{\text{Total length of reference summaries}} $$
+
+As per [Wikipedia](https://en.wikipedia.org/wiki/N-gram), an "n-gram is a sequence of n adjacent symbols in particular order. The symbols may be n adjacent letters (including punctuation marks and blanks), syllables, or rarely whole words found in a language dataset; or adjacent phonemes extracted from a speech-recording dataset, or adjacent base pairs extracted from a genome".
+
+In other words, the higher the score the better. An optimal score would be a ROUGE score equal to 1. As we can see here, we are far from such results.
+
+---
+
+## 4. PEFT Fine-tuning :cartwheeling:
+
+Even though Flan-T5 was trained to solve multiple kind of tasks, it has not been optimized for text summary. This is why its performance can look deceiving at first sight. However, in this section we will see how we can improve the training model without having to retrain all parameters on our task. 
+
+With PEFT, the idea is to freeze most of the layers of our model, and update only some of the layers. Various methods exist to do this such as (i) "Selective" (only fine-tune some parameters), (ii) "Reparameterization" (implement a low rank representation of the model), or (iii) "Additive" (add trainable layers or parameters to the model).
+
+In this section we will go with the second option and use the [LoRA method](https://huggingface.co/docs/diffusers/main/en/training/lora).
+
+```python
+lora_config = LoraConfig(
+    r=32,  # Rank of the submatrices
+    lora_alpha=32,
+    target_modules=["q", "v"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type=TaskType.SEQ_2_SEQ_LM
+)
+
+# we create the PEFT model
+peft_model = get_peft_model(original_model, lora_config)
+```
+
+Finally, we will define some additional training parameters such as the learning rate, the dropout rate, batch size, etc. (see notebook for full list). Due to RAM constraints we will limit the training to 10 epochs, but as we will see, this will be enough to already improve the performance of our model. 
+
+```python
+# we train our new model
+peft_trainer.train()
+```
+
+```python
+input_ids = tokenizer(prompt, return_tensors="pt", max_length=512, truncation=True).input_ids.to(device)
+output_PEFT = tokenizer.decode(fine_tuned_model.model.generate(input_ids, max_new_tokens=100)[0], skip_special_tokens=True)
+```
+
+```
+
+```
