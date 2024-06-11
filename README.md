@@ -63,13 +63,14 @@ Summary:
 
 Which results into the below prompt:
 ```
+Input Prompt:
+
+
 Summarize the following conversation:
-#Person1#: Let's start out to discuss the question of payment terms.
-#Person2#: I suppose you know very well that we require irrevocable letters of credit payable against presentation of shipping documents.
-#Person1#: I fully understand your position. An irrevocable letter of credit ensures that the seller gets paid in time. But, on the other hand it would add to the buying costs. We've been, after all, trading partners for 3 years and you know us well. Can't you give us D / A or D / P?
-#Person2#: I'm afraid it has been our practice so far to insist on payment by L / C.
-#Person1#: But on our part, our government is reluctant to approve of L / C payment for our imports. And there is the licensing problem.
-#Person2#: I understand that. Still, I'm not in a position to help you. Maybe we could do something later when we have had more and larger deals together.
+#Person1#: What kind of job do you intend to do?
+#Person2#: I want to do some management job since I have three-year's work history.
+#Person1#: What are your plans if you were hired?
+#Person2#: I would apply my specialty and experience to my job and gradually move up to the management level in this company.
 
 Summary:
 ```
@@ -134,7 +135,15 @@ Even though Flan-T5 was trained to solve multiple kind of tasks, it has not been
 
 With PEFT, the idea is to freeze most of the layers of our model, and update only some of the layers. Various methods exist to do this such as (i) "Selective" (only fine-tune some parameters), (ii) "Reparameterization" (implement a low rank representation of the model), or (iii) "Additive" (add trainable layers or parameters to the model).
 
-In this section we will go with the second option and use the [LoRA method](https://huggingface.co/docs/diffusers/main/en/training/lora).
+In this section we will go with the second option and use the [LoRA method](https://huggingface.co/docs/diffusers/main/en/training/lora). If you are not familiar with the method, below is a simple schema from Bhavin Jawade [blog post](https://towardsdatascience.com/understanding-lora-low-rank-adaptation-for-finetuning-large-models-936bce1a07c6): *Understanding LoRA — Low Rank Adaptation For Finetuning Large Models*.
+
+<img width="713" alt="Screenshot 2024-06-11 at 19 16 50" src="https://github.com/julienguyet/peft_fine_tuning/assets/55974674/d76e6aa4-8bbf-45da-a6a2-7e81e3d6efcf">
+
+In short: the weights of the model are frozen and we use two matrices A and B with their product a low rank representation of the matrix W. Then, W will be updated with the gradients being computed from A and B (W' = W + A•B). 
+
+It is important to state that as of today, there is still no proven better size or best technique to estimate the size of A and B. Below we used a 32 rank, but feel free to try with lower (or higher) values based on your set up.
+
+Here is the code to initialize our LoRA config:
 
 ```python
 lora_config = LoraConfig(
@@ -163,5 +172,45 @@ output_PEFT = tokenizer.decode(fine_tuned_model.model.generate(input_ids, max_ne
 ```
 
 ```
+Input Prompt:
+
+Summarize the following conversation:
+#Person1#: What kind of job do you intend to do?
+#Person2#: I want to do some management job since I have three-year's work history.
+#Person1#: What are your plans if you were hired?
+#Person2#: I would apply my specialty and experience to my job and gradually move up to the management level in this company.
+
+Summary:
+
+----------------------------------------------------------------------------------------------------
+Baseline Human Summary:
+#Person2# tells #Person1# #Person2#'s ideal job and the job plan if hired.
+----------------------------------------------------------------------------------------------------
+Base Model Summary - Zero Shot:
+Ask the person to describe their career goals.
+----------------------------------------------------------------------------------------------------
+PEFT Model Summary - Zero Shot:
+#Person2# wants to do some management job because he has three years' work history.
+```
+
+Now, if we compare ROUGE scores for the base model and the one we fine-tuned with PEFT:
 
 ```
+ORIGINAL MODEL:
+{'rouge1': 0.021739130434782608, 'rouge2': 0.0, 'rougeL': 0.021739130434782608, 'rougeLsum': 0.021739130434782608}
+--------------------------------------------------------------------------------
+PEFT MODEL:
+{'rouge1': 0.12162162162162163, 'rouge2': 0.0, 'rougeL': 0.12162162162162163, 'rougeLsum': 0.12162162162162163}
+```
+
+As you can see all scores have drastically improve thanks to our fine-tuning (actually, the rouge1 score increased by... 459.46% :exploding_head:). Of course, our model is not perfect yet, but keep in mind we performed this fine-tuning using a simple set up, so imagine the potential with better resources and the capacity to play with the model parameters. 
+
+---
+
+## 4. Conclusion :teacher:
+
+As we've seen in this tutorial, PEFT offers amazing possibility to fine-tune an LLM to our specific use-case. On top of that, it avoids us to have to retrain the whole model (Meta explained in their LLAMA2 paper that it took 2 weeks to train the model the first time...). 
+
+Feel free to play with the different parameters and to explore what else can be done with LLMs (translation, word prediction, ...). 
+
+We will meet again soon for this time exploring how LLMs can be leveraged for social purposes in the context of healthcare :wave:
