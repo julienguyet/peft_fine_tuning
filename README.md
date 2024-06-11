@@ -12,12 +12,12 @@ If you wish to reuse this code and adapt it to your needs, I highly encourage yo
 
 ---
 
-## 2. Loading the model :telescope:
+## 2. Loading the Model :telescope:
 
 We will work with the famous "dialogsum" dataset. It is made of dialogues that could happend between humans. All conversations have corresponding summaries.
 You can obtain more information [here](https://huggingface.co/datasets/knkarthick/dialogsum). Below is the sample code to import it:
 
-```
+```python
 huggingface_dataset_name = "knkarthick/dialogsum"
 dataset = load_dataset(huggingface_dataset_name)
 ```
@@ -35,7 +35,41 @@ Note that we also used the associated Tokenizer to avoid any mismatch between th
 If we check the size of the model we get the below results:
 
 ```
-trainable model parameters: 247577856
 all model parameters: 247577856
 percentage of trainable model parameters: 100.00%
+```
+
+---
+
+## 3. Base Model Performance :weight_lifting:
+
+Our goal is to generate summary of dialogues. Before trying to update any parameters of the model, we should check its current performance. 
+
+First, we will design a prompt:
+
+```python
+index = np.random.randint(100)
+dialogue = dataset["train"][index]["dialogue"]
+summary = dataset["train"][index]["summary"]
+
+prompt = f"""
+
+Summarize the following conversation:
+{dialogue}
+
+Summary:
+"""
+```
+
+Which results into the below prompt:
+```
+Summarize the following conversation:
+#Person1#: Let's start out to discuss the question of payment terms.
+#Person2#: I suppose you know very well that we require irrevocable letters of credit payable against presentation of shipping documents.
+#Person1#: I fully understand your position. An irrevocable letter of credit ensures that the seller gets paid in time. But, on the other hand it would add to the buying costs. We've been, after all, trading partners for 3 years and you know us well. Can't you give us D / A or D / P?
+#Person2#: I'm afraid it has been our practice so far to insist on payment by L / C.
+#Person1#: But on our part, our government is reluctant to approve of L / C payment for our imports. And there is the licensing problem.
+#Person2#: I understand that. Still, I'm not in a position to help you. Maybe we could do something later when we have had more and larger deals together.
+
+Summary:
 ```
