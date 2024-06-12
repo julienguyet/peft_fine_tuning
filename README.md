@@ -141,7 +141,7 @@ In this section we will go with the second option and use the [LoRA method](http
 
 In short: the weights of the model are frozen and we use two matrices A and B with their product a low rank representation of the matrix W. Then, W will be updated with the gradients being computed from A and B (W' = W + A•B). 
 
-It is important to state that as of today, there is still no proven better size or best technique to estimate the size of A and B. Below we used a 32 rank, but feel free to try with lower (or higher) values based on your set up.
+It is important to state that as of today, there is still no concensus among the scientific community on the best technique to estimate the size of A and B. Below we used a 32 rank, but feel free to try with lower (or higher) values based on your set up.
 
 Here is the code to initialize our LoRA config:
 
